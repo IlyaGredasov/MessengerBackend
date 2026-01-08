@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: Messenger API
+  version: 1.0.0
+  description: Messenger REST API
+  contact:
+    name: API Support
+    email: support@messenger.local
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: Authentication operations
+  - name: Users
+    description: User management
+  - name: Messages
+    description: Chat messages
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: loginUser
+      summary: Login user
+      description: |
+        Authenticates user and returns Bearer token.
+        Use this token in the Authorization header for protected endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Auth successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+        '401':
+          description: Invalid credentials
+
+  /users:
+    post:
+      tags: [Users]
+      operationId: createUser
+      summary: Create new user
+      description: Registers a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: { type: string }
+                password: { type: string }
+      responses:
+        '201':
+          description: User created
+        '409':
+          description: Login already exists
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      operationId: getUser
+      summary: Get user
+      description: Returns user by id. Requires authentication.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized - missing or invalid token
+        '404':
+          description: Not found
+
+    delete:
+      tags: [Users]
+      operationId: deleteUser
+      summary: Delete user
+      description: Deletes user by id. Requires authentication.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized - missing or invalid token
+        '403':
+          description: Forbidden - can only delete own account
+
+  /users/{id}/password:
+    put:
+      tags: [Users]
+      operationId: changePassword
+      summary: Change password
+      description: Changes user password. Requires authentication.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [old_password, new_password]
+              properties:
+                old_password: { type: string }
+                new_password: { type: string }
+      responses:
+        '204':
+          description: Updated
+        '401':
+          description: Unauthorized - missing or invalid token
+        '403':
+          description: Forbidden - wrong old password or can only change own password
+
+  /users/{id}/login:
+    put:
+      tags: [Users]
+      operationId: changeLogin
+      summary: Change login
+      description: Changes user login. Requires authentication.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_login]
+              properties:
+                new_login: { type: string }
+      responses:
+        '204':
+          description: Updated
+        '401':
+          description: Unauthorized - missing or invalid token
+        '403':
+          description: Forbidden - can only change own login
+        '409':
+          description: Login already exists
+
+  /messages:
+    get:
+      tags: [Messages]
+      operationId: getMessages
+      summary: Get all messages
+      description: Returns paginated list of messages. Requires authentication.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '401':
+          description: Unauthorized - missing or invalid token
+
+    post:
+      tags: [Messages]
+      operationId: createMessage
+      summary: Create message
+      description: Creates a new message. Requires authentication.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, text]
+              properties:
+                user_id: { type: integer }
+                text: { type: string }
+      responses:
+        '201':
+          description: Created
+        '401':
+          description: Unauthorized - missing or invalid token
+        '403':
+          description: Forbidden - can only create messages for own user_id
+
+  /messages/{id}:
+    get:
+      tags: [Messages]
+      operationId: getMessage
+      summary: Get single message
+      description: Returns message by id. Requires authentication.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: Unauthorized - missing or invalid token
+        '404':
+          description: Not found
+
+    put:
+      tags: [Messages]
+      operationId: updateMessage
+      summary: Update message
+      description: Updates message text. Requires authentication.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string }
+      responses:
+        '204':
+          description: Updated
+        '401':
+          description: Unauthorized - missing or invalid token
+        '403':
+          description: Forbidden - can only update own messages
+        '404':
+          description: Not found
+
+    delete:
+      tags: [Messages]
+      operationId: deleteMessage
+      summary: Delete message
+      description: Deletes message by id. Requires authentication.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized - missing or invalid token
+        '403':
+          description: Forbidden - can only delete own messages
+        '404':
+          description: Not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: UUID
+      description: |
+        Bearer token authentication. 
+        Get the token by calling POST /auth/login endpoint.
+        Include the token in the Authorization header: `Authorization: Bearer <token>`
+
+  schemas:
+    User:
+      type: object
+      description: User model
+      properties:
+        id: { type: integer }
+        login: { type: string }
+
+    Message:
+      type: object
+      description: Chat message
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        text: { type: string }
+        created_at: { type: string, format: date-time }

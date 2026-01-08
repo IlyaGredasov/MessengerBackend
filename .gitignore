@@ -1,0 +1,29 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+
+# Python venv/cache
+.venv/
+__pycache__/
+*.pyc
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# IDE/editor
+.idea/
+.vscode/
+*.iml
+*.swp
+*~
+
+# Logs and local data
+*.log
+*.db
+*.sqlite
+
+# OS cruft
+.DS_Store
+Thumbs.db

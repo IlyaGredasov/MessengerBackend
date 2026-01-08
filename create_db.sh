@@ -1,0 +1,1 @@
+sudo psql -U postgres -h 0.0.0.0 -f db.sql -d messenger
